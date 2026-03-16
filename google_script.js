@@ -1,4 +1,4 @@
-function doPost(e) {
+function doGet(e) {
   var sheetDate = e.parameter.date;
   var sheetTime = e.parameter.time;
   var sheetTonnage = e.parameter.tonnage;

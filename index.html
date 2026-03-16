@@ -527,22 +527,20 @@
         // Zmień poniższy adres na własny wygenerowany w Google Apps Script
         const GOOGLE_APP_URL = localStorage.getItem("google_app_url") || ""; 
         if(GOOGLE_APP_URL) {
-            const formData = new URLSearchParams();
-            formData.append("date", d.toLocaleDateString('pl-PL'));
-            formData.append("time", d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }));
-            formData.append("tonnage", t_val);
-            formData.append("length", L1);
-            formData.append("pieces", pieces);
-            formData.append("timeSpent", declaredMins);
-            formData.append("weight", total_wgt);
+            const params = new URLSearchParams({
+                date: d.toLocaleDateString('pl-PL'),
+                time: d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }),
+                tonnage: t_val,
+                length: L1,
+                pieces: pieces,
+                timeSpent: declaredMins,
+                weight: total_wgt
+            });
 
-            fetch(GOOGLE_APP_URL, {
-                method: "POST",
-                mode: "no-cors",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded"
-                },
-                body: formData.toString()
+            // Używamy GET by ominąć błędy CORS przeglądarki podczas uderzania do macro google
+            fetch(GOOGLE_APP_URL + "?" + params.toString(), {
+                method: "GET",
+                mode: "no-cors"
             })
             .then(res => console.log("Żądanie wysłane do arkusza Google"))
             .catch(err => console.error("Błąd zapisu do chmury", err));
