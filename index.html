@@ -335,9 +335,10 @@
     <div class="history-box">
         <h3 style="margin-top:0; color:#333; font-size: 18px;">📜 Dziennik Produkcji (Norma: 450 min)</h3>
         <div id="history-list"></div>
-        <div style="display: flex; gap: 5px;">
+        <div style="display: flex; gap: 5px; flex-wrap: wrap;">
             <button class="btn-secondary" onclick="clearHistory()">🗑️ Wyczyść Historię</button>
             <button class="btn-success" onclick="exportCSV()">📥 Eksport CSV</button>
+            <button class="btn-secondary" onclick="setGoogleUrl()" style="background:#8e44ad;">☁️ Podłącz Arkusz Google</button>
         </div>
     </div>
 </div>
@@ -521,6 +522,30 @@
             time: declaredMins, // Dopisany czas z normy wpisanej na sztywno
             weight: total_wgt
         });
+
+        // Wysylka do Google Sheets w tle jezeli jest poprawny URL
+        // Zmień poniższy adres na własny wygenerowany w Google Apps Script
+        const GOOGLE_APP_URL = localStorage.getItem("google_app_url") || ""; 
+        if(GOOGLE_APP_URL) {
+            const formData = new URLSearchParams();
+            formData.append("date", d.toLocaleDateString('pl-PL'));
+            formData.append("time", d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }));
+            formData.append("tonnage", t_val);
+            formData.append("length", L1);
+            formData.append("pieces", pieces);
+            formData.append("timeSpent", declaredMins);
+            formData.append("weight", total_wgt);
+
+            fetch(GOOGLE_APP_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: formData.toString()
+            })
+            .then(res => console.log("Zapisano do arkusza Google", res))
+            .catch(err => console.error("Błąd zapisu do chmury", err));
+        }
 
         clearInterval(countdownInterval);
         localStorage.removeItem("prod_targetTime");
@@ -726,6 +751,20 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    }
+
+    // --- GOOGLE SHEETS SYNC ---
+    function setGoogleUrl() {
+        let currentUrl = localStorage.getItem("google_app_url") || "";
+        let newUrl = prompt("Podaj adres Web App z Google Apps Script, aby automatycznie wysyłać wyniki produkcji do Arkusza na żywo (zostaw puste aby wyłączyć):", currentUrl);
+        if (newUrl !== null) {
+            localStorage.setItem("google_app_url", newUrl.trim());
+            if(newUrl.trim()) {
+                alert("Połączono z chmurą! Kolejne zlecenia będą automatycznie wpadać do Arkusza Google.");
+            } else {
+                alert("Odłączono wysyłanie do chmury.");
+            }
+        }
     }
 
     // --- ALARM ---
