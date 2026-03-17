@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asystent-zawiesi-v1';
+const CACHE_NAME = 'asystent-zawiesi-v2';
 const ASSETS_TO_CACHE = [
   './index.html',
   './manifest.json',
@@ -8,56 +8,58 @@ const ASSETS_TO_CACHE = [
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('[Service Worker] Caching App Shell');
-        return Promise.all(
-          ASSETS_TO_CACHE.map(url => {
-            return cache.add(url).catch(error => {
-              console.error('[Service Worker] Failed to cache:', url, error);
-            });
-          })
-        );
-      })
-  );
-});
-
-self.addEventListener('fetch', (event) => {
-  let request = event.request;
-  
-  // If the request is for a directory (e.g. Github Pages root), serve index.html
-  if (request.mode === 'navigate' || request.url.endsWith('/')) {
-    request = new Request('./index.html');
-  }
-
-  event.respondWith(
-    caches.match(request)
-      .then((response) => {
-        return response || fetch(event.request).then((fetchResponse) => {
-          return caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, fetchResponse.clone());
-            return fetchResponse;
-          });
-        });
-      }).catch(() => {
-        // Fallback for offline if fetch fails and not in cache
-        console.error('[Service Worker] Fetch failed for:', event.request.url);
-      })
+      .then((cache) => cache.addAll(ASSETS_TO_CACHE))
+      .catch((err) => console.error('[Service Worker] Błąd przy cachowaniu zasobów podczas instalacji:', err))
   );
 });
 
 self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
+        cacheNames
+          .filter((cacheName) => cacheName !== CACHE_NAME)
+          .map((cacheName) => caches.delete(cacheName))
       );
-    })
+    }).then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  // Ignoruj żądania inne niż GET (np. POST do Google Sheets)
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  // Dla nawigacji do podstron lub katalogu obsługujemy przez index.html
+  if (event.request.mode === 'navigate' || event.request.url.endsWith('/')) {
+    event.respondWith(
+      caches.match('./index.html').then((response) => {
+        return response || fetch(event.request).catch(() => console.error('Błąd fetch dla nawigacji'));
+      })
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request)
+      .then((response) => {
+        return response || fetch(event.request).then((fetchResponse) => {
+          // Zapisuj do cache tylko poprawne odpowiedzi
+          if (!fetchResponse || fetchResponse.status !== 200 || fetchResponse.type !== 'basic') {
+            return fetchResponse;
+          }
+          let responseToCache = fetchResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+          return fetchResponse;
+        }).catch((err) => {
+          console.error('[Service Worker] Fetch failed:', event.request.url, err);
+        });
+      })
   );
 });
