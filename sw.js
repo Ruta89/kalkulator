@@ -1,5 +1,6 @@
 const CACHE_NAME = 'asystent-zawiesi-v2';
 const ASSETS_TO_CACHE = [
+  './',
   './index.html',
   './manifest.json',
   './icon.svg',
@@ -10,9 +11,20 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(ASSETS_TO_CACHE))
-      .catch((err) => console.error('[Service Worker] Błąd przy cachowaniu zasobów podczas instalacji:', err))
+    caches.open(CACHE_NAME).then(async (cache) => {
+      for (let asset of ASSETS_TO_CACHE) {
+        try {
+          const response = await fetch(asset);
+          if (response.ok) {
+            await cache.put(asset, response);
+          } else {
+            console.error('[Service Worker] Failed to fetch an asset:', asset, response.status);
+          }
+        } catch (err) {
+          console.error('[Service Worker] Fetch error for asset:', asset, err);
+        }
+      }
+    })
   );
 });
 
