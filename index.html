@@ -322,6 +322,7 @@
         <div class="form-group">
           <label>Tonaż [t]:</label>
           <select id="tonnage" onchange="calcAndSave()">
+            <option value="" disabled selected>-- wybierz --</option>
             <option value="0.5">0.5 t</option>
             <option value="1.0">1.0 t</option>
             <option value="1.5">1.5 t</option>
@@ -805,6 +806,7 @@
         targetTime = null;
         startTime = null;
 
+        document.getElementById('tonnage').value = '';
         document.getElementById('length').value = '';
         document.getElementById('pieces').value = '';
         document.getElementById('timeInput').value = '';
