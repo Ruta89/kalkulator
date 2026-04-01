@@ -735,7 +735,7 @@
 
       const GOOGLE_APP_URL =
         localStorage.getItem(
-          'https://script.google.com/macros/s/AKfycbyMF6erPqZswJhqbVYvnHXhv2I4puRU5gxCfuUS7PE89kSM9rXLH0CRVVNF_6mrkgjQXg/exec',
+          'https://script.google.com/macros/s/AKfycbxrmq_RZpRxHaTDqmMxb6W4zPuSLFZVtpgNnIfxih75AJyqQm4iUfjufXSEa1XQf5OO/exec',
         ) || '';
       if (GOOGLE_APP_URL) {
         const params = new URLSearchParams({
@@ -1036,7 +1036,7 @@
 
     // --- GOOGLE SHEETS SYNC ---
     function setGoogleUrl() {
-      let currentUrl = localStorage.getItem('https://script.google.com/macros/s/AKfycbyMF6erPqZswJhqbVYvnHXhv2I4puRU5gxCfuUS7PE89kSM9rXLH0CRVVNF_6mrkgjQXg/exec') || '';
+      let currentUrl = localStorage.getItem('https://script.google.com/macros/s/AKfycbxrmq_RZpRxHaTDqmMxb6W4zPuSLFZVtpgNnIfxih75AJyqQm4iUfjufXSEa1XQf5OO/exec') || '';
       let newUrl = prompt(
         'Podaj adres Web App z Google Apps Script, aby automatycznie wysyłać wyniki produkcji do Arkusza na żywo (zostaw puste aby wyłączyć):',
         currentUrl,
