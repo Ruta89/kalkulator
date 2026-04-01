@@ -24,7 +24,7 @@ self.addEventListener('install', (event) => {
           console.error('[Service Worker] Fetch error for asset:', asset, err);
         }
       }
-    })
+    }).catch((err) => console.error('[Service Worker] Intentionally caught install error:', err))
   );
 });
 

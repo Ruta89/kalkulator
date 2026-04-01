@@ -666,20 +666,7 @@
       }
 
       function loadState() {
-        let saved = localStorage.getItem('zawiesia_inputs');
-        if (saved) {
-          let data = JSON.parse(saved);
-          if (data.t_val) document.getElementById('tonnage').value = data.t_val;
-          
-          if (data.l1_str !== undefined) document.getElementById('length').value = data.l1_str;
-          else if (data.L1 !== undefined) document.getElementById('length').value = data.L1;
-
-          if (data.pieces_str !== undefined) document.getElementById('pieces').value = data.pieces_str;
-          else if (data.pieces !== undefined) document.getElementById('pieces').value = data.pieces;
-
-          if (data.time_str !== undefined) document.getElementById('timeInput').value = data.time_str;
-          else if (data.timeHours !== undefined) document.getElementById('timeInput').value = data.timeHours;
-        }
+        // Zablokowano przywracanie, aby formularz wymuszał puste wartości na starcie.
       }
 
       // --- PRODUKCJA I CZAS ---
@@ -1123,7 +1110,7 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker
-            .register('sw.js')
+            .register('sw.js?v=3')
             .then((registration) => {
               console.log('SW registered: ', registration);
             })
