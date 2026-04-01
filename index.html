@@ -360,7 +360,7 @@
             type="number"
             id="length"
             step="0.25"
-            value="1.0"
+            value=""
             min="0.25"
             inputmode="decimal"
             oninput="calcAndSave()"
@@ -374,7 +374,7 @@
           <input
             type="number"
             id="pieces"
-            value="10"
+            value=""
             min="1"
             inputmode="numeric"
             oninput="calcAndSave()"
@@ -386,7 +386,7 @@
             type="number"
             id="timeInput"
             step="0.1"
-            value="0.5"
+            value=""
             min="0.1"
             inputmode="decimal"
             oninput="calcAndSave()"
@@ -584,14 +584,17 @@
 
       function calcAndSave() {
         let t_val = document.getElementById('tonnage').value;
-        let L1 = parseFloat(document.getElementById('length').value) || 1.0;
-        let pieces = parseInt(document.getElementById('pieces').value) || 1;
-        let timeHours =
-          parseFloat(document.getElementById('timeInput').value) || 0;
+        let l1_str = document.getElementById('length').value;
+        let pieces_str = document.getElementById('pieces').value;
+        let time_str = document.getElementById('timeInput').value;
+        
+        let L1 = parseFloat(l1_str) || 1.0;
+        let pieces = parseInt(pieces_str) || 1;
+        let timeHours = parseFloat(time_str) || 0;
 
         localStorage.setItem(
           'zawiesia_inputs',
-          JSON.stringify({ t_val, L1, pieces, timeHours }),
+          JSON.stringify({ t_val, L1, pieces, timeHours, l1_str, pieces_str, time_str }),
         );
 
         let t = db[t_val];
@@ -624,10 +627,16 @@
         let saved = localStorage.getItem('zawiesia_inputs');
         if (saved) {
           let data = JSON.parse(saved);
-          document.getElementById('tonnage').value = data.t_val || '0.5';
-          document.getElementById('length').value = data.L1 || 1.0;
-          document.getElementById('pieces').value = data.pieces || 10;
-          document.getElementById('timeInput').value = data.timeHours || 0.5;
+          if (data.t_val) document.getElementById('tonnage').value = data.t_val;
+          
+          if (data.l1_str !== undefined) document.getElementById('length').value = data.l1_str;
+          else if (data.L1 !== undefined) document.getElementById('length').value = data.L1;
+
+          if (data.pieces_str !== undefined) document.getElementById('pieces').value = data.pieces_str;
+          else if (data.pieces !== undefined) document.getElementById('pieces').value = data.pieces;
+
+          if (data.time_str !== undefined) document.getElementById('timeInput').value = data.time_str;
+          else if (data.timeHours !== undefined) document.getElementById('timeInput').value = data.timeHours;
         }
       }
 
@@ -686,11 +695,16 @@
         let total_wgt = parseFloat((final_unit_wgt * pieces).toFixed(2));
 
         let d = new Date();
+        let startD = startTime ? new Date(startTime) : new Date(Date.now() - declaredMins * 60000);
 
         saveToHistory({
           id: Date.now(),
           dayStr: d.toLocaleDateString('pl-PL'),
           timeStr: d.toLocaleTimeString('pl-PL', {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+          startTimeStr: startD.toLocaleTimeString('pl-PL', {
             hour: '2-digit',
             minute: '2-digit',
           }),
@@ -735,6 +749,13 @@
         localStorage.removeItem('prod_startTime');
         resetAlarm();
         uiTimerActive(false);
+
+        // Czyszczenie formularza po zakończeniu
+        document.getElementById('length').value = '';
+        document.getElementById('pieces').value = '';
+        document.getElementById('timeInput').value = '';
+        calcAndSave();
+        
         renderHistory();
       }
 
@@ -832,6 +853,7 @@
 
           item.dispDay = day;
           item.dispTime = time;
+          item.dispStartTime = item.startTimeStr || "?";
           item.parsedTime = parseFloat(item.time) || 0;
 
           groups[day].items.push(item);
@@ -861,11 +883,12 @@
                 </div>
                 <div class="table-responsive">
                     <table class="hist-table">
-                        <tr><th>Godz. Zakończenia</th><th>Tonaż</th><th>L1 [m]</th><th>Szt.</th><th>Minuty normy</th><th>Kg</th><th>Opcje</th></tr>
+                        <tr><th>Godz. Rozp.</th><th>Godz. Zak.</th><th>Tonaż</th><th>L1 [m]</th><th>Szt.</th><th>Minuty normy</th><th>Kg</th><th>Opcje</th></tr>
             `;
 
           g.items.forEach((item) => {
             html += `<tr>
+                    <td>${item.dispStartTime}</td>
                     <td>${item.dispTime}</td>
                     <td><b>${item.ton} t</b></td>
                     <td>${item.l1}</td>
@@ -949,7 +972,7 @@
           return alert('Brak danych do wyeksportowania!');
 
         let csv =
-          'Data;Godzina;Tonaz [t];Dlugosc L1 [m];Sztuki;Czas wykonania (Norma) [min];Laczna waga [kg]\n';
+          'Data;Godzina Rozpoczecia;Godzina Zakonczenia;Tonaz [t];Dlugosc L1 [m];Sztuki;Czas wykonania (Norma) [min];Laczna waga [kg]\n';
 
         history.forEach((i) => {
           let d = i.dayStr || new Date(i.id).toLocaleDateString('pl-PL');
@@ -959,7 +982,8 @@
               hour: '2-digit',
               minute: '2-digit',
             });
-          csv += `${d};${t};${i.ton};${i.l1};${i.pieces};${i.time};${i.weight}\n`;
+          let startT = i.startTimeStr || "?";
+          csv += `${d};${startT};${t};${i.ton};${i.l1};${i.pieces};${i.time};${i.weight}\n`;
         });
 
         let blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
