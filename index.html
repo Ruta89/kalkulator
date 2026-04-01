@@ -583,44 +583,78 @@
       };
 
       function calcAndSave() {
-        let t_val = document.getElementById('tonnage').value;
-        let l1_str = document.getElementById('length').value;
-        let pieces_str = document.getElementById('pieces').value;
-        let time_str = document.getElementById('timeInput').value;
-        
-        let L1 = parseFloat(l1_str) || 1.0;
-        let pieces = parseInt(pieces_str) || 1;
-        let timeHours = parseFloat(time_str) || 0;
+        const tonnageEl = document.getElementById('tonnage');
+        const lengthEl = document.getElementById('length');
+        const piecesEl = document.getElementById('pieces');
+        const timeEl = document.getElementById('timeInput');
+        const startBtn = document.getElementById('btn-start');
+
+        const t_val = tonnageEl.value;
+        const l1_str = lengthEl.value;
+        const pieces_str = piecesEl.value;
+        const time_str = timeEl.value;
+
+        const L1 = parseFloat(l1_str);
+        const pieces = parseInt(pieces_str);
+        const timeHours = parseFloat(time_str);
 
         localStorage.setItem(
           'zawiesia_inputs',
           JSON.stringify({ t_val, L1, pieces, timeHours, l1_str, pieces_str, time_str }),
         );
 
-        let t = db[t_val];
-        let m_cnt = t.cnt2 - t.cnt1;
-        let add_cnt = t.cnt1 - m_cnt;
-        let final_cnt = m_cnt * L1 + add_cnt;
+        const t = db[t_val];
+        const minLength = parseFloat(lengthEl.min) || 0.25;
+        const validInputs =
+          t &&
+          Number.isFinite(L1) &&
+          L1 >= minLength &&
+          Number.isFinite(pieces) &&
+          pieces >= 1 &&
+          Number.isFinite(timeHours) &&
+          timeHours > 0;
 
-        let m_wgt = t.wgt2 - t.wgt1;
-        let add_wgt = t.wgt1 - m_wgt;
-        let final_unit_wgt = m_wgt * L1 + add_wgt;
-        let total_wgt = final_unit_wgt * pieces;
+        startBtn.disabled = !validInputs;
 
-        let total_yarn_kg = t.spools * 15;
-        let exchange_pieces = Math.floor(total_yarn_kg / final_unit_wgt);
+        const counterEl = document.getElementById('out-counter');
+        const unitWeightEl = document.getElementById('out-unit-weight');
+        const totalWeightEl = document.getElementById('out-total-weight');
+        const spoolCountEl = document.getElementById('out-spool-count');
+        const exchangeEl = document.getElementById('out-spools-exchange');
 
-        document.getElementById('out-counter').innerText =
-          Math.round(final_cnt);
-        document.getElementById('out-unit-weight').innerText =
-          final_unit_wgt.toFixed(2) + ' kg';
-        document.getElementById('out-total-weight').innerText =
-          total_wgt.toFixed(2) + ' kg';
+        if (!validInputs) {
+          counterEl.innerText = '-';
+          unitWeightEl.innerText = '-';
+          totalWeightEl.innerText = '-';
+          spoolCountEl.innerText = '-';
+          exchangeEl.innerText = '-';
+          return;
+        }
 
-        document.getElementById('out-spool-count').innerText =
-          t.spools + ' szt.';
-        document.getElementById('out-spools-exchange').innerText =
-          exchange_pieces + ' szt.';
+        const m_cnt = t.cnt2 - t.cnt1;
+        const add_cnt = t.cnt1 - m_cnt;
+        const final_cnt = m_cnt * L1 + add_cnt;
+
+        const m_wgt = t.wgt2 - t.wgt1;
+        const add_wgt = t.wgt1 - m_wgt;
+        const final_unit_wgt = m_wgt * L1 + add_wgt;
+        const total_wgt = final_unit_wgt * pieces;
+
+        const total_yarn_kg = t.spools * 15;
+        const exchange_pieces =
+          final_unit_wgt > 0 ? Math.floor(total_yarn_kg / final_unit_wgt) : 0;
+
+        counterEl.innerText = Number.isFinite(final_cnt)
+          ? Math.round(final_cnt)
+          : '-';
+        unitWeightEl.innerText = Number.isFinite(final_unit_wgt)
+          ? final_unit_wgt.toFixed(2) + ' kg'
+          : '-';
+        totalWeightEl.innerText = Number.isFinite(total_wgt)
+          ? total_wgt.toFixed(2) + ' kg'
+          : '-';
+        spoolCountEl.innerText = t.spools + ' szt.';
+        exchangeEl.innerText = exchange_pieces + ' szt.';
       }
 
       function loadState() {
@@ -679,10 +713,17 @@
       }
 
       function finishEarly() {
-        // --- KLUCZOWA ZMIANA: Zapisujemy ZADEKLAROWANY czas z formularza, a nie stoper ---
-        let timeHours =
+        const timeHours =
           parseFloat(document.getElementById('timeInput').value) || 0;
-        let declaredMins = parseFloat((timeHours * 60).toFixed(1));
+        if (timeHours <= 0) {
+          alert('Podaj prawidłowy czas wykonania, zanim zakończysz produkcję.');
+          return;
+        }
+
+        const declaredMins = parseFloat((timeHours * 60).toFixed(1));
+        const measuredMins = startTime
+          ? parseFloat(((Date.now() - startTime) / 60000).toFixed(1))
+          : declaredMins;
 
         let t_val = document.getElementById('tonnage').value;
         let L1 = document.getElementById('length').value;
@@ -695,7 +736,9 @@
         let total_wgt = parseFloat((final_unit_wgt * pieces).toFixed(2));
 
         let d = new Date();
-        let startD = startTime ? new Date(startTime) : new Date(Date.now() - declaredMins * 60000);
+        let startD = startTime
+          ? new Date(startTime)
+          : new Date(Date.now() - measuredMins * 60000);
 
         saveToHistory({
           id: Date.now(),
@@ -711,12 +754,11 @@
           ton: t_val,
           l1: L1,
           pieces: pieces,
-          time: declaredMins, // Dopisany czas z normy wpisanej na sztywno
+          time: declaredMins,
+          actualTime: measuredMins,
           weight: total_wgt,
         });
 
-        // Wysylka do Google Sheets w tle jezeli jest poprawny URL
-        // Zmień poniższy adres na własny wygenerowany w Google Apps Script
         const GOOGLE_APP_URL =
           localStorage.getItem(
             'https://script.google.com/macros/s/AKfycbyMF6erPqZswJhqbVYvnHXhv2I4puRU5gxCfuUS7PE89kSM9rXLH0CRVVNF_6mrkgjQXg/exec',
@@ -732,16 +774,27 @@
             length: L1,
             pieces: pieces,
             timeSpent: declaredMins,
+            actualTime: measuredMins,
             weight: total_wgt,
           });
 
-          // Używamy GET by ominąć błędy CORS przeglądarki podczas uderzania do macro google
           fetch(GOOGLE_APP_URL + '?' + params.toString(), {
             method: 'GET',
-            mode: 'no-cors',
+            mode: 'cors',
           })
-            .then((res) => console.log('Żądanie wysłane do arkusza Google'))
-            .catch((err) => console.error('Błąd zapisu do chmury', err));
+            .then((res) => {
+              if (!res.ok) {
+                throw new Error(`Status ${res.status}`);
+              }
+              console.log('Zapis do arkusza Google potwierdzony.');
+            })
+            .catch((err) => {
+              console.error('Błąd zapisu do chmury', err);
+              alert(
+                'Nie udało się zapisać zlecenia w chmurze. Sprawdź konfigurację CORS w Google Apps Script: ' +
+                  err.message,
+              );
+            });
         }
 
         clearInterval(countdownInterval);
@@ -749,13 +802,14 @@
         localStorage.removeItem('prod_startTime');
         resetAlarm();
         uiTimerActive(false);
+        targetTime = null;
+        startTime = null;
 
-        // Czyszczenie formularza po zakończeniu
         document.getElementById('length').value = '';
         document.getElementById('pieces').value = '';
         document.getElementById('timeInput').value = '';
         calcAndSave();
-        
+
         renderHistory();
       }
 
