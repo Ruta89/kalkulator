@@ -408,6 +408,12 @@
       </button>
 
       <div class="timer-box" id="timer-box">
+        <div style="font-size: 14px; color: #bdc3c7; margin-bottom: 5px;">
+          Rozpoczęto o:
+          <span id="out-start-time" style="font-weight: bold; color: #2ecc71"
+            >-</span
+          >
+        </div>
         <div style="font-size: 14px; color: #bdc3c7">
           Zakończenie planowane:
           <span id="out-end-time" style="font-weight: bold; color: #f1c40f"
@@ -847,6 +853,15 @@
             hour: '2-digit',
             minute: '2-digit',
           });
+          
+        if (startTime) {
+          let startD = new Date(startTime);
+          document.getElementById('out-start-time').innerText =
+            startD.toLocaleTimeString('pl-PL', {
+              hour: '2-digit',
+              minute: '2-digit',
+            });
+        }
       }
 
       function uiTimerActive(isActive) {
