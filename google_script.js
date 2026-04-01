@@ -1,4 +1,4 @@
-function doPost(e) {
+function doGet(e) {
   var sheetDate = e.parameter.date;
   var sheetTime = e.parameter.time;
   var sheetTonnage = e.parameter.tonnage;
@@ -7,12 +7,12 @@ function doPost(e) {
   var sheetTimeSpent = e.parameter.timeSpent;
   var sheetWeight = e.parameter.weight;
 
-  var spreadsheetId = 'TWOJ_ID_ARKUSZA_GOOGLE'; // Zmień na ID swojego arkusza
+  var spreadsheetId = 'AKfycbyMF6erPqZswJhqbVYvnHXhv2I4puRU5gxCfuUS7PE89kSM9rXLH0CRVVNF_6mrkgjQXg'; // Zmień na ID swojego arkusza
   var sheet = SpreadsheetApp.openById(spreadsheetId).getActiveSheet();
 
   sheet.appendRow([sheetDate, sheetTime, sheetTonnage, sheetLength, sheetPieces, sheetTimeSpent, sheetWeight]);
 
-  var result = {"status": "success"};
+  var result = { "status": "success" };
   return ContentService.createTextOutput(JSON.stringify(result))
     .setMimeType(ContentService.MimeType.JSON);
 }
