@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asystent-zawiesi-v2';
+const CACHE_NAME = 'asystent-zawiesi-v3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

@@ -886,10 +886,18 @@
         ? 'block'
         : 'none';
 
-      document.getElementById('tonnage').disabled = isActive;
-      document.getElementById('length').disabled = isActive;
-      document.getElementById('pieces').disabled = isActive;
-      document.getElementById('timeInput').disabled = isActive;
+      const tonnageEl = document.getElementById('tonnage');
+      const lengthEl = document.getElementById('length');
+      const piecesEl = document.getElementById('pieces');
+      const timeEl = document.getElementById('timeInput');
+
+      // Tylko blokujemy pola jeśli produkcja jest aktywna I pola nie są puste.
+      // Jeśli któreś pole jest puste (np. po odświeżeniu starego zlecenia),
+      // pozwalamy użytkownikowi je uzupełnić, aby mógł zakończyć/zapisać zlecenie.
+      tonnageEl.disabled = isActive && !!tonnageEl.value;
+      lengthEl.disabled = isActive && !!lengthEl.value;
+      piecesEl.disabled = isActive && !!piecesEl.value;
+      timeEl.disabled = isActive && !!timeEl.value;
     }
 
     // --- ZARZĄDZANIE HISTORIĄ I GRUPOWANIEM DNI ---
@@ -1164,7 +1172,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker
-          .register('sw.js?v=3')
+          .register('sw.js?v=4')
           .then((registration) => {
             console.log('SW registered: ', registration);
           })
