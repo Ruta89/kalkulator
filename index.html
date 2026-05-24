@@ -567,6 +567,7 @@
       renderHistory();
       checkActiveTimer();
       calcAndSave();
+      setupEnterKeys();
     };
 
     function calcAndSave() {
@@ -645,7 +646,18 @@
     }
 
     function loadState() {
-      // Zablokowano przywracanie, aby formularz wymuszał puste wartości na starcie.
+      const saved = localStorage.getItem('zawiesia_inputs');
+      if (saved) {
+        try {
+          const { t_val, l1_str, pieces_str, time_str } = JSON.parse(saved);
+          if (t_val) document.getElementById('tonnage').value = t_val;
+          if (l1_str !== undefined) document.getElementById('length').value = l1_str;
+          if (pieces_str !== undefined) document.getElementById('pieces').value = pieces_str;
+          if (time_str !== undefined) document.getElementById('timeInput').value = time_str;
+        } catch (e) {
+          console.error('Error loading inputs state:', e);
+        }
+      }
     }
 
     // --- PRODUKCJA I CZAS ---
@@ -662,6 +674,21 @@
       localStorage.setItem('prod_startTime', startTime);
       localStorage.setItem('prod_targetTime', targetTime);
 
+      // Save inputs for the active production
+      const tonnageVal = document.getElementById('tonnage').value;
+      const lengthVal = document.getElementById('length').value;
+      const piecesVal = document.getElementById('pieces').value;
+      const timeVal = document.getElementById('timeInput').value;
+      localStorage.setItem(
+        'active_production_inputs',
+        JSON.stringify({
+          tonnage: tonnageVal,
+          length: lengthVal,
+          pieces: piecesVal,
+          timeInput: timeVal
+        })
+      );
+
       uiTimerActive(true);
       resetAlarm();
 
@@ -676,12 +703,28 @@
         if (parseInt(savedTarget) > Date.now()) {
           targetTime = parseInt(savedTarget);
           startTime = parseInt(savedStart);
+
+          // Restore active production inputs to avoid empty form fields during active timer
+          const activeInputs = localStorage.getItem('active_production_inputs');
+          if (activeInputs) {
+            try {
+              const { tonnage, length, pieces, timeInput } = JSON.parse(activeInputs);
+              if (tonnage) document.getElementById('tonnage').value = tonnage;
+              if (length) document.getElementById('length').value = length;
+              if (pieces) document.getElementById('pieces').value = pieces;
+              if (timeInput) document.getElementById('timeInput').value = timeInput;
+            } catch (e) {
+              console.error('Error loading active production inputs:', e);
+            }
+          }
+
           uiTimerActive(true);
           countdownInterval = setInterval(updateTimer, 1000);
           updateTimer();
         } else {
           localStorage.removeItem('prod_targetTime');
           localStorage.removeItem('prod_startTime');
+          localStorage.removeItem('active_production_inputs');
         }
       }
     }
@@ -774,6 +817,7 @@
       clearInterval(countdownInterval);
       localStorage.removeItem('prod_targetTime');
       localStorage.removeItem('prod_startTime');
+      localStorage.removeItem('active_production_inputs');
       resetAlarm();
       uiTimerActive(false);
       targetTime = null;
@@ -1084,6 +1128,37 @@
       gainNode.connect(audioCtx.destination);
       osc.start();
       osc.stop(audioCtx.currentTime + 0.3);
+    }
+
+    function setupEnterKeys() {
+      // Form inputs Enter key
+      ['tonnage', 'length', 'pieces', 'timeInput'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.keyCode === 13) {
+              event.preventDefault();
+              const startBtn = document.getElementById('btn-start');
+              if (startBtn && startBtn.style.display !== 'none' && !startBtn.disabled) {
+                startBtn.click();
+              }
+            }
+          });
+        }
+      });
+
+      // Edit modal inputs Enter key
+      ['edit-pieces', 'edit-time'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.keyCode === 13) {
+              event.preventDefault();
+              saveEdit();
+            }
+          });
+        }
+      });
     }
 
     if ('serviceWorker' in navigator) {
