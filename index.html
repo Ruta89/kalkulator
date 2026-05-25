@@ -569,7 +569,54 @@
       renderHistory();
       checkActiveTimer();
       calcAndSave();
+      setupFormNavigation();
     };
+
+    function setupFormNavigation() {
+      const mainInputs = ['tonnage', 'length', 'pieces', 'timeInput'];
+      mainInputs.forEach((id, index) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            if (index < mainInputs.length - 1) {
+              e.preventDefault();
+              const nextEl = document.getElementById(mainInputs[index + 1]);
+              if (nextEl) {
+                nextEl.focus();
+                if (typeof nextEl.select === 'function') {
+                  try {
+                    nextEl.select();
+                  } catch (err) {}
+                }
+              }
+            }
+          }
+        });
+      });
+
+      const editInputs = ['edit-pieces', 'edit-time'];
+      editInputs.forEach((id, index) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            if (index < editInputs.length - 1) {
+              e.preventDefault();
+              const nextEl = document.getElementById(editInputs[index + 1]);
+              if (nextEl) {
+                nextEl.focus();
+                if (typeof nextEl.select === 'function') {
+                  try {
+                    nextEl.select();
+                  } catch (err) {}
+                }
+              }
+            }
+          }
+        });
+      });
+    }
 
     function calcAndSave() {
       const tonnageEl = document.getElementById('tonnage');
